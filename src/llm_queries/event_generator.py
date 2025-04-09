@@ -1,0 +1,107 @@
+from dataclasses import asdict
+import json
+from typing import List
+
+from models.data_schema import Assistant, EventType
+from models.conversation import Conversation
+from models.event import Event, SenderType
+from llm_queries.llm_query import BedrockQuery, OpenAIQuery
+
+
+class EventGenerator(OpenAIQuery):
+
+    def __init__(
+            self, 
+            client,
+            chat_model, 
+            assistant: Assistant, 
+            event_types: List[EventType],
+            conversation: Conversation
+        ):
+        super().__init__(client, chat_model)
+        self.assistant = assistant
+        self.event_types = event_types
+        self.conversation = conversation
+
+    def generate_prompt(self) -> str:        
+        return  f"""Determine the events that occurred during a conversation between a user and an assistant.
+
+### Instructions
+1. Review the assistant description, event type definitions, and conversation carefully.
+2. For each message in the conversation, assign exactly one event type that most accurately represents what occurred in that message.
+3. Consider the full context of the conversation and how each message relates to previous exchanges.
+4. For event types with similar definitions, identify the distinguishing characteristics and use them to make clear distinctions.
+5. Prioritize specific evidence in the message content over general impressions.
+6. These event tags will be used to perform product analytics on the user/assistant conversations. Thus, think about which event type would be most beneficial for the message to be tagged with in a product analytics platform.
+
+### Assistant
+{self.assistant.prompt_format}
+
+### Event Types
+{json.dumps([event_type.prompt_object for event_type in self.event_types], indent=4)}
+
+### Conversation
+{json.dumps(self.conversation.prompt_format, indent=4)}
+"""
+    
+    def _response_schema(self):
+        properties = {}
+
+        for message in self.conversation.messages:
+            if message.is_bot:
+                event_type_ids = [str(et.name) for et in self.event_types if (et.sender_type== SenderType.ASSISTANT)]
+            else:
+                event_type_ids = [str(et.name) for et in self.event_types if (et.sender_type== SenderType.USER)]
+
+            properties[str(message.message_id)] = {
+                "type": "string",
+                "enum": event_type_ids,
+                "description": f"The event_id that occurred during message_id {message.message_id}"
+            }
+
+        return {
+            "type": "object",
+            "properties": properties,
+            "required": [str(m.message_id) for m in self.conversation.messages],
+            "additionalProperties": False
+        }
+    
+    def response_format(self):
+        schema = self._response_schema()
+
+        return {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "response",
+                "strict": True,
+                "schema": schema
+            }
+        }
+    
+    # TODO: be able to swap back and forth between response formats
+    def response_format_claude(self):
+        schema = self._response_schema()
+
+        return {
+            "name": "generate_events",
+            "description": "Generates the list of events that occurred during a conversation between a user and an assistant.",
+            "input_schema": schema
+        }
+
+    def parse_response(self, json_response) -> List[Event]:
+        print(json_response)
+        
+        events = []
+
+        for message in self.conversation.messages:
+            message_id = str(message.message_id)
+            event_type_id = json_response.get(message_id)
+            event_type = next((et for et in self.event_types if str(et.name) == event_type_id), None)
+
+            events.append(Event(
+                event_type=event_type,
+                conversation_id=self.conversation.id,
+                message_id=message_id,
+                explanation=""
+            ))
+        return events        

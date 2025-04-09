@@ -1,0 +1,65 @@
+assistant:
+  name: Therapist
+  description: A therapist who helps people with their problems
+
+event_types:
+  - name: Emotional Disclosure
+    definition: The user openly expresses emotions like sadness, anxiety, anger, or joy.
+    sender_type: USER
+  - name: Emotional Withdrawal
+    definition: The user disengages from the therapeutic process through passive behaviors such as providing minimal responses, using non-committal replies (e.g., 'IDK', 'I guess'), or leaving substantial gaps in communication. The key characteristic is a reduction in emotional engagement and communication volume, suggesting the user is pulling back from the conversation without explicitly objecting to it.
+    sender_type: USER
+  - name: Express Gratitude
+    definition: The user expresses gratitude or appreciation for the assistant's help. This includes direct expressions as well as more subtle acknowledgments of satisfaction with the assistant.
+    sender_type: USER
+  - name: Narrative Disclosure
+    definition: The user shares information about their circumstances, history, or current situation.
+    sender_type: USER
+  - name: Personal Insight
+    definition: The user demonstrates a new understanding, realization, or perspective about their situation, patterns, or relationship
+    sender_type: USER
+  - name: Seek Clarification
+    definition: The user asks the assistant to explain, elaborate on, or rephrase previously provided information or suggestions from the assistant.
+    sender_type: USER
+  - name: Self-Exploration
+    definition: The user engages in examining patterns, considering alternatives, or developing potential solutions about themselves or their situation.
+    sender_type: USER
+  - name: Small Talk
+    definition: The user engages in small talk, such as greetings, introductions, or goodbyes.
+    sender_type: USER
+  - name: Support Request
+    definition: The user explicitly asks for help, advice, resources, or connection with professional support related to their personal situation or therapeutic needs.
+    sender_type: USER
+  - name: Therapeutic Resistance
+    definition: The user actively opposes aspects of the therapeutic process through behaviors such as directly challenging the assistant's suggestions, explicitly expressing disagreement or skepticism, defending problematic patterns, or overtly refusing to explore recommended topics. The key characteristic is active opposition rather than passive withdrawal, demonstrating engagement with the process even if that engagement is confrontational.
+    sender_type: USER
+
+  - name: Educational Guidance
+    definition: The assistant provides informative explanations about psychological concepts, common experiences, or coping mechanisms to help normalize or contextualize the user's experiences.
+    sender_type: ASSISTANT 
+  - name: Positive Affirmation
+    definition: The assistant explicitly recognizes the user's strengths, capabilities, or progress in a way that fosters self-efficacy and agency.
+    sender_type: ASSISTANT
+  - name: Request Deflection
+    definition: The assistant deliberately redirects, declines, or does not fulfill the user's explicit request or question.
+    sender_type: ASSISTANT
+  - name: Small Talk
+    definition: The assistant engages in small talk, such as greetings, introductions, or goodbyes.
+    sender_type: ASSISTANT
+  - name: Therapeutic Intervention
+    definition: The assistant correctly applies an established therapeutic technique or approach that appropriately matches the user's current state and needs. Note that the assistant must CORRECTLY apply the technique for this event to be triggered. For example, if the assistant misinterprets the user while applying the technique, this event should not be triggered.
+    sender_type: ASSISTANT
+  - name: Therapeutic Misalignment
+    definition: The assistant's response fails to properly align with the user's current needs, emotional state, or communication intent. Examples include repeating information without adapting to the user's follow-up messages, forgetting information that the user has already shared, and providing an overly generic response after the user has shared specific details. This can result in responses that feel dismissive, off-target, or invalidating, making the user feel unheard or misunderstood.
+    sender_type: ASSISTANT
+
+
+
+
+
+
+
+
+
+
+

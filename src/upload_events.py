@@ -7,7 +7,6 @@ from tqdm import tqdm
 from amplitude import Amplitude
 import boto3
 from openai import OpenAI
-import pandas as pd
 
 # Configure root logger to WARNING to silence third-party libraries
 logging.basicConfig(
@@ -18,8 +17,9 @@ logging.basicConfig(
 from destinations.amplitude import AmplitudeDestination
 from llm_queries.event_generator import EventGenerator
 from models.data_schema import DataSchema
-from sources.csv import CSVSource
+from sources.local import LocalSource
 from sources.s3 import S3Source
+
 # Set loggers within this application to INFO
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -45,9 +45,9 @@ if __name__ == "__main__":
         source = S3Source(s3_client, args.data_path)
     else:
         logger.info("Loading data from local file")
-        source = CSVSource(args.data_path)
+        source = LocalSource(args.data_path)
 
-    conversations = source.get_conversations()
+    conversations = source.get_conversations()[:10]
     logger.info(f"Found {len(conversations)} conversations")
 
     events = list()

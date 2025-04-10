@@ -1,2 +1,4 @@
 amplitude-analytics
+boto3
 openai
+posthog

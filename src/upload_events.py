@@ -7,6 +7,7 @@ from tqdm import tqdm
 from amplitude import Amplitude
 import boto3
 from openai import OpenAI
+from posthog import Posthog
 
 # Configure root logger to WARNING to silence third-party libraries
 logging.basicConfig(
@@ -15,6 +16,7 @@ logging.basicConfig(
 )
 
 from destinations.amplitude import AmplitudeDestination
+from destinations.posthog import PosthogDestination
 from llm_queries.event_generator import EventGenerator
 from models.data_schema import DataSchema
 from sources.local import LocalSource
@@ -31,6 +33,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-path", type=str, required=True)
     parser.add_argument("--data-schema-path", type=str, required=True)
+    parser.add_argument("--destination", type=str, choices=["amplitude", "posthog"], required=True)
     parser.add_argument("--event-model", type=str, default="gpt-4o")
     args = parser.parse_args()
 
@@ -47,7 +50,18 @@ if __name__ == "__main__":
         logger.info("Loading data from local file")
         source = LocalSource(args.data_path)
 
-    conversations = source.get_conversations()[:10]
+    if args.destination == "amplitude":
+        logger.info("Using Amplitude destination")
+        destination = AmplitudeDestination(amplitude_client=Amplitude(os.getenv("AMPLITUDE_API_KEY")))
+    else:
+        logger.info("Using Posthog destination")
+        posthog_client = Posthog(
+            project_api_key=os.getenv("POSTHOG_API_KEY"),
+            host=os.getenv("POSTHOG_HOST")
+        )
+        destination = PosthogDestination(posthog_client=posthog_client)       
+
+    conversations = source.get_conversations()
     logger.info(f"Found {len(conversations)} conversations")
 
     events = list()
@@ -75,11 +89,10 @@ if __name__ == "__main__":
                 logger.error(f"Error processing conversation: {e}")
 
     logger.info(f"Uploading {len(events)} events")
-    amplitude = AmplitudeDestination(amplitude_client=Amplitude(os.getenv("AMPLITUDE_API_KEY")))
-    
+
     with ThreadPoolExecutor(max_workers=10) as executor:
         futures= [
-            executor.submit(amplitude.send_event, event) for event in events
+            executor.submit(destination.send_event, event) for event in events
         ]
         
         for future in tqdm(as_completed(futures), total=len(events), desc="Uploading events"):

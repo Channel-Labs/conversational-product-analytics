@@ -1,9 +1,10 @@
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Optional, Dict
 from enum import Enum, auto
 import json
 
-
+from models.conversation import Message
 class SenderType(Enum):
     USER = auto()
     ASSISTANT = auto()
@@ -24,7 +25,7 @@ class EventType:
 
 @dataclass
 class Event:
-    conversation_id: str
-    message_id: str
+    user_id: str
     event_type: EventType
-    explanation: Optional[str] = None
+    conversation_id: str
+    message: Message

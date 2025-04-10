@@ -88,20 +88,17 @@ class EventGenerator(OpenAIQuery):
             "input_schema": schema
         }
 
-    def parse_response(self, json_response) -> List[Event]:
-        print(json_response)
-        
+    def parse_response(self, json_response) -> List[Event]:        
         events = []
-
         for message in self.conversation.messages:
             message_id = str(message.message_id)
             event_type_id = json_response.get(message_id)
             event_type = next((et for et in self.event_types if str(et.name) == event_type_id), None)
 
             events.append(Event(
+                user_id=self.conversation.user_id,
                 event_type=event_type,
                 conversation_id=self.conversation.id,
-                message_id=message_id,
-                explanation=""
+                message=message
             ))
         return events        

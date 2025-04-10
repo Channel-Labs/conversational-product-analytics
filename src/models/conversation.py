@@ -18,7 +18,7 @@ class Message:
 @dataclass
 class Conversation:
     id: str
-    name: Optional[str]
+    user_id: str
     messages: List[Message]
 
     @property

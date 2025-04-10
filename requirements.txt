@@ -1,0 +1,2 @@
+amplitude-analytics
+openai

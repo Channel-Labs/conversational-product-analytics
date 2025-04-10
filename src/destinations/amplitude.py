@@ -4,7 +4,7 @@ from amplitude import Amplitude
 from amplitude import BaseEvent
 
 from destinations.destination import Destination
-from models.event import Event, SenderType
+from models.event import Event, ROLE
 
 
 class AmplitudeDestination(Destination):
@@ -21,8 +21,8 @@ class AmplitudeDestination(Destination):
                 event_properties={
                     "conversation_id": event.conversation_id,
                     "message_id": event.message.message_id,
-                    "message_content": event.message.content,
-                    "sender_type": SenderType.ASSISTANT.name if event.message.is_bot else SenderType.USER.name
+                    "content": event.message.content,
+                    "role": event.message.role.name.lower()
                 }
             )
         )

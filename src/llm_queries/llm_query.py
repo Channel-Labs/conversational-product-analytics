@@ -2,7 +2,10 @@ from abc import ABC, abstractmethod
 import json
 import time
 import openai
+import logging
 
+# Set up logger
+logger = logging.getLogger(__name__)
 
 class LLMQuery(ABC):
     """Base abstract class for LLM queries that defines the common interface."""
@@ -75,12 +78,12 @@ class OpenAIQuery(LLMQuery):
                 return self.parse_response(json_response)
             except openai.RateLimitError as e:
                 retries += 1
-                print(e)
-                print(f"Rate limit hit. Retrying in {retry_delay} seconds... (Attempt {retries}/{max_retries})")
+                logger.warning(e)
+                logger.info(f"Rate limit hit. Retrying in {retry_delay} seconds... (Attempt {retries}/{max_retries})")
                 time.sleep(retry_delay)
                 retry_delay += 2
             except Exception as e:
-                print(f"Unexpected error: {e}")
+                logger.error(f"Unexpected error: {e}")
                 break
 
         raise Exception("Unable to complete llm query.")
@@ -103,8 +106,8 @@ class BedrockQuery(LLMQuery):
                 return self.parse_response(json_response)
             except Exception as e:
                 retries += 1
-                print(f"Error: {e}")
-                print(f"Retrying in {retry_delay} seconds... (Attempt {retries}/{max_retries})")
+                logger.error(f"Error: {e}")
+                logger.info(f"Retrying in {retry_delay} seconds... (Attempt {retries}/{max_retries})")
                 time.sleep(retry_delay)
                 retry_delay += 2
 
@@ -136,7 +139,7 @@ class BedrockQuery(LLMQuery):
         
         # Parse the response
         response_body = json.loads(response['body'].read().decode('utf-8'))
-        print(f"Response body: {response_body}")
+        logger.debug(f"Response body: {response_body}")
         
         input = response_body["content"][0]["input"]
         return json.dumps(input)

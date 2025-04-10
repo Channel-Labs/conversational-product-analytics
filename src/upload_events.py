@@ -19,7 +19,7 @@ from destinations.amplitude import AmplitudeDestination
 from llm_queries.event_generator import EventGenerator
 from models.data_schema import DataSchema
 from sources.csv import CSVSource
-
+from sources.s3 import S3Source
 # Set loggers within this application to INFO
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -35,17 +35,24 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     openai_client = OpenAI()
-    s3_client = boto3.client("s3")
 
     data_schema = DataSchema.from_yaml(args.data_schema_path)
 
-    source = CSVSource(args.data_path)
+    # Automatically determine source type based on path prefix
+    if args.data_path.startswith("s3://"):
+        logger.info("Detected S3 path, loading data from S3")
+        s3_client = boto3.client("s3")
+        source = S3Source(s3_client, args.data_path)
+    else:
+        logger.info("Loading data from local file")
+        source = CSVSource(args.data_path)
+
     conversations = source.get_conversations()
     logger.info(f"Found {len(conversations)} conversations")
 
     events = list()
     with ThreadPoolExecutor(max_workers=5) as executor:
-        future_to_conversation = {
+        futures = [
             executor.submit(
                 EventGenerator(
                     openai_client,
@@ -57,10 +64,10 @@ if __name__ == "__main__":
                 max_retries=2,
                 retry_delay=2,
                 timeout=60
-            ): conversation for conversation in conversations
-        }
+            ) for conversation in conversations
+        ]
         
-        for future in tqdm(as_completed(future_to_conversation), total=len(conversations), desc="Generating events"):
+        for future in tqdm(as_completed(futures), total=len(conversations), desc="Generating events"):
             try:
                 events_for_conversation = future.result()
                 events.extend(events_for_conversation)
@@ -71,11 +78,11 @@ if __name__ == "__main__":
     amplitude = AmplitudeDestination(amplitude_client=Amplitude(os.getenv("AMPLITUDE_API_KEY")))
     
     with ThreadPoolExecutor(max_workers=10) as executor:
-        future_to_event = {
-            executor.submit(amplitude.send_event, event): event for event in events
-        }
+        futures= [
+            executor.submit(amplitude.send_event, event) for event in events
+        ]
         
-        for future in tqdm(as_completed(future_to_event), total=len(events), desc="Uploading events"):
+        for future in tqdm(as_completed(futures), total=len(events), desc="Uploading events"):
             try:
                 future.result()
             except Exception as e:

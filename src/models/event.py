@@ -1,19 +1,15 @@
 from dataclasses import dataclass
-from datetime import datetime
-from typing import Optional, Dict
-from enum import Enum, auto
+from typing import Dict
 import json
 
-from models.conversation import Message
-class SenderType(Enum):
-    USER = auto()
-    ASSISTANT = auto()
+from models.conversation import Message, ROLE
+
 
 @dataclass
 class EventType:
     name: str
     definition: str
-    sender_type: SenderType
+    role: ROLE
 
     @property
     def prompt_object(self) -> Dict[str, str]:

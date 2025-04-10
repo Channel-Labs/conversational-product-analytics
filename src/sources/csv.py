@@ -2,7 +2,7 @@ from typing import List
 
 import pandas as pd
 
-from models.conversation import Conversation, Message
+from models.conversation import Conversation, Message, ROLE
 
 from sources.source import Source
 
@@ -30,7 +30,7 @@ class CSVSource(Source):
             conversation = Conversation(
                 id=conversation_id,
                 user_id=group_df.iloc[0][user_id_column],
-                messages=[Message(row['is_bot'], row['message'], row['timestamp'], row.get('message_id', str(i))) for i, row in group_df.iterrows()]
+                messages=[Message(ROLE[row['role']], row['content'], row['timestamp'], row.get('message_id', str(i))) for i, row in group_df.iterrows()]
             )
             conversations.append(conversation)
 

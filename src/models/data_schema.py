@@ -3,7 +3,7 @@ import json
 from typing import List, ClassVar
 
 import yaml
-from models.event import EventType, SenderType
+from models.event import EventType, ROLE
 
 
 @dataclass
@@ -47,7 +47,7 @@ class DataSchema:
             event_type = EventType(
                 name=event_type_data['name'],
                 definition=event_type_data['definition'],
-                sender_type=SenderType[event_type_data['sender_type']]
+                role=ROLE[event_type_data['role']]
             )
             event_types.append(event_type)
         

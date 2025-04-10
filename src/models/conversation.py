@@ -1,18 +1,23 @@
 from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum, auto
 from typing import List, Optional
 
 
+class ROLE(Enum):
+    user = auto()
+    assistant = auto()
+
 @dataclass
 class Message:
-    is_bot: bool
+    role: ROLE
     content: str
     timestamp: datetime
     message_id: str
 
     @property
     def prompt_format(self):
-        return {"message_id": self.message_id, "role": "assistant" if self.is_bot else "user", "content": self.content}
+        return {"message_id": self.message_id, "role": self.role.name.lower(), "content": self.content}
 
 
 @dataclass

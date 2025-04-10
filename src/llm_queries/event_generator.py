@@ -4,7 +4,7 @@ from typing import List
 
 from models.data_schema import Assistant, EventType
 from models.conversation import Conversation
-from models.event import Event, SenderType
+from models.event import Event, ROLE
 from llm_queries.llm_query import BedrockQuery, OpenAIQuery
 
 
@@ -23,7 +23,7 @@ class EventGenerator(OpenAIQuery):
         self.event_types = event_types
         self.conversation = conversation
 
-    def generate_prompt(self) -> str:        
+    def generate_prompt(self) -> str:      
         return  f"""Determine the events that occurred during a conversation between a user and an assistant.
 
 ### Instructions
@@ -48,10 +48,10 @@ class EventGenerator(OpenAIQuery):
         properties = {}
 
         for message in self.conversation.messages:
-            if message.is_bot:
-                event_type_ids = [str(et.name) for et in self.event_types if (et.sender_type== SenderType.ASSISTANT)]
+            if message.role == ROLE.assistant:
+                event_type_ids = [str(et.name) for et in self.event_types if (et.role == ROLE.assistant)]
             else:
-                event_type_ids = [str(et.name) for et in self.event_types if (et.sender_type== SenderType.USER)]
+                event_type_ids = [str(et.name) for et in self.event_types if (et.role == ROLE.user)]
 
             properties[str(message.message_id)] = {
                 "type": "string",
@@ -88,12 +88,15 @@ class EventGenerator(OpenAIQuery):
             "input_schema": schema
         }
 
-    def parse_response(self, json_response) -> List[Event]:        
+    def parse_response(self, json_response) -> List[Event]:   
         events = []
         for message in self.conversation.messages:
             message_id = str(message.message_id)
             event_type_id = json_response.get(message_id)
             event_type = next((et for et in self.event_types if str(et.name) == event_type_id), None)
+
+            if not event_type:
+                raise ValueError(f"Event type {event_type_id} not found in event types")
 
             events.append(Event(
                 user_id=self.conversation.user_id,

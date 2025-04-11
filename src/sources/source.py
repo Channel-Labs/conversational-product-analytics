@@ -23,12 +23,11 @@ class Source(ABC):
             # Convert timestamps to datetime before creating Message objects
             df['timestamp'] = pd.to_datetime(df['timestamp'])
 
+        if 'message_id' not in df.columns:
+            df['message_id'] = df.index.astype(str)
+
         conversations = []
-        for conversation_id, group_df in df.groupby(conversation_id_column):
-        
-            # Ensure index is reset to ensure messages contain correct message_id
-            group_df = group_df.reset_index(drop=True)
-            
+        for conversation_id, group_df in df.groupby(conversation_id_column):    
             # If no timestamp column, create timestamps starting from now
             if not has_timestamp:
                 now = datetime.now()
@@ -38,7 +37,7 @@ class Source(ABC):
             conversation = Conversation(
                 id=conversation_id,
                 user_id=group_df.iloc[0][user_id_column],
-                messages=[Message(ROLE[row['role']], row['content'], row['timestamp'], row.get('message_id', str(i))) for i, row in group_df.iterrows()]
+                messages=[Message(ROLE[row['role']], row['content'], row['timestamp'], row['message_id']) for _, row in group_df.iterrows()]
             )
             conversations.append(conversation)     
 

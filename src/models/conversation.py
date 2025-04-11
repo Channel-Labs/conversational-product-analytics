@@ -26,6 +26,14 @@ class Conversation:
     user_id: str
     messages: List[Message]
 
+    def __hash__(self):
+        return hash((self.id, self.user_id))
+
+    def __eq__(self, other):
+        if not isinstance(other, Conversation):
+            return False
+        return self.id == other.id and self.user_id == other.user_id
+
     @property
     def start_time(self) -> Optional[datetime]:
         if not self.messages:

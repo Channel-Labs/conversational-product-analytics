@@ -1,11 +1,29 @@
 assistant:
-  name: Therapist
-  description: A therapist who helps people with their problems
+  name: Mental Health Companion
+  description: A compassionate mental health chatbot, designed to support individuals through their emotional challenges.
 
 event_types:
   - name: Emotional Disclosure
     definition: The user openly expresses emotions like sadness, anxiety, anger, or joy.
     role: user
+    properties:
+      emotion:
+        type: string
+        description: The emotion the user is expressing.
+        choices:
+        - Anger/Frustration
+        - Anxiety/Fear/Panic
+        - Confusion
+        - Guilt/Self-Blame
+        - Joy/Happiness
+        - Isolation/Loneliness
+        - Sadness/Depression/Grief
+        - Shame/Humiliation
+      
+  - name: Crisis
+    definition: The user explicitly discloses feelings of crisis, expresses suicidal thoughts, or mentions self‐harm. These disclosures indicate acute distress and a need for urgent intervention.
+    role: user
+
   - name: Emotional Withdrawal
     definition: The user disengages from the therapeutic process through passive behaviors such as providing minimal responses, using non-committal replies (e.g., 'IDK', 'I guess'), or leaving substantial gaps in communication. The key characteristic is a reduction in emotional engagement and communication volume, suggesting the user is pulling back from the conversation without explicitly objecting to it.
     role: user

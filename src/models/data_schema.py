@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 import json
-from typing import List, ClassVar
+from typing import List
 
 import yaml
-from models.event import EventType, ROLE
+from models.event import EventType, ROLE, EventProperty
 
 
 @dataclass
@@ -44,10 +44,23 @@ class DataSchema:
         # Parse event types
         event_types = []
         for event_type_data in schema_data['event_types']:
+            # Parse properties if they exist
+            properties = []
+            if 'properties' in event_type_data:
+                for prop_name, prop_data in event_type_data['properties'].items():
+                    choices = prop_data.get('choices', [])
+                    property = EventProperty(
+                        name=prop_name,
+                        definition=prop_data.get('description', ''),
+                        choices=choices
+                    )
+                    properties.append(property)
+            
             event_type = EventType(
                 name=event_type_data['name'],
                 definition=event_type_data['definition'],
-                role=ROLE[event_type_data['role']]
+                role=ROLE[event_type_data['role']],
+                properties=properties
             )
             event_types.append(event_type)
         

@@ -2,7 +2,7 @@ import json
 from typing import List, Dict
 
 from llm_queries.llm_query import OpenAIQuery
-from models.data_schema import Assistant
+from models.assistant import Assistant
 from models.event import EventType, Event, EventProperty
 
 class EventPropertyGenerator(OpenAIQuery):

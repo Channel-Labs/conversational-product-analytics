@@ -20,7 +20,7 @@ event_types:
         - Sadness/Depression/Grief
         - Shame/Humiliation
       
-  - name: Crisis
+  - name: Crisis Disclosure
     definition: The user explicitly discloses feelings of crisis, expresses suicidal thoughts, or mentions self‐harm. These disclosures indicate acute distress and a need for urgent intervention.
     role: user
 

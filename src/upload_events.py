@@ -66,7 +66,7 @@ if __name__ == "__main__":
         destination = PosthogDestination(posthog_client=posthog_client)       
 
     logger.info("Loading conversations")
-    conversations = source.get_conversations()[:10]
+    conversations = source.get_conversations()
     logger.info(f"Found {len(conversations)} conversations")
 
     logger.info("Generating events")

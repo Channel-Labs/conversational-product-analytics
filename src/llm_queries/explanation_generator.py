@@ -3,7 +3,7 @@ import json
 from typing import List
 
 from llm_queries.llm_query import OpenAIQuery
-from models.data_schema import Assistant
+from models.assistant import Assistant
 from models.conversation import Conversation, Message
 from models.event import EventType, Event
 

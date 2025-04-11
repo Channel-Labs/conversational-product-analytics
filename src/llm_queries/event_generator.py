@@ -2,9 +2,9 @@ from dataclasses import asdict
 import json
 from typing import List
 
-from models.data_schema import Assistant, EventType
+from models.assistant import Assistant
 from models.conversation import Conversation
-from models.event import Event, ROLE
+from models.event import Event, EventType, ROLE
 from llm_queries.llm_query import BedrockQuery, OpenAIQuery
 
 

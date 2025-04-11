@@ -4,11 +4,19 @@ import json
 
 from models.conversation import Message, ROLE
 
-@dataclass
+@dataclass(frozen=True)
 class EventProperty:
     name: str
     definition: str
     choices: List[str]
+
+    def __hash__(self):
+        return hash(self.name)
+
+    def __eq__(self, other):
+        if isinstance(other, EventProperty):
+            return self.name == other.name
+        return False
 
     @property
     def prompt_object(self) -> Dict[str, str]:
@@ -23,11 +31,19 @@ class EventType:
     name: str
     definition: str
     role: ROLE
-    properties: List[EventProperty]
+    properties: List[EventProperty] = field(default_factory=list)
+    
+    def __hash__(self):
+        return hash(self.name)
+
+    def __eq__(self, other):
+        if isinstance(other, EventType):
+            return self.name == other.name
+        return False
     
     @property
     def prompt_object(self) -> Dict[str, str]:
-        return {"name": self.name, "definition": self.definition}
+        return {"name": self.name, "definition": self.definition, "role": self.role.name}
 
     @property
     def prompt_format(self) -> str:

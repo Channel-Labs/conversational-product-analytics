@@ -3,17 +3,9 @@ import json
 from typing import List
 
 import yaml
+from models.assistant import Assistant
 from models.event import EventType, ROLE, EventProperty
 
-
-@dataclass
-class Assistant:
-    name: str
-    description: str
-
-    @property
-    def prompt_format(self) -> str:
-        return json.dumps({"name": self.name, "description": self.description}, indent=4)
 
 @dataclass
 class DataSchema:
@@ -69,5 +61,44 @@ class DataSchema:
             event_types=event_types
         )
 
+    def to_yaml(self, file_path: str):
+        """
+        Save the DataSchema object to a YAML file.
+        
+        Args:
+            file_path: Path where the YAML file will be saved
+        """
+        # Create a dictionary representing the schema structure
+        schema_dict = {
+            'assistant': {
+                'name': self.assistant.name,
+                'description': self.assistant.description
+            },
+            'event_types': []
+        }
+        
+        # Add each event type to the schema
+        for event_type in self.event_types:
+            event_type_dict = {
+                'name': event_type.name,
+                'definition': event_type.definition,
+                'role': event_type.role.name
+            }
+            
+            # Add properties if they exist
+            if event_type.properties:
+                event_type_dict['properties'] = {}
+                for prop in event_type.properties:
+                    event_type_dict['properties'][prop.name] = {
+                        'description': prop.definition
+                    }
+                    if prop.choices:
+                        event_type_dict['properties'][prop.name]['choices'] = prop.choices
+            
+            schema_dict['event_types'].append(event_type_dict)
+        
+        # Write the dictionary to the YAML file
+        with open(file_path, 'w') as f:
+            yaml.dump(schema_dict, f, sort_keys=False)
 
     

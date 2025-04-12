@@ -43,7 +43,7 @@ class DataSchema:
                     choices = prop_data.get('choices', [])
                     property = EventProperty(
                         name=prop_name,
-                        definition=prop_data.get('description', ''),
+                        definition=prop_data.get('definition', ''),
                         choices=choices
                     )
                     properties.append(property)
@@ -90,7 +90,7 @@ class DataSchema:
                 event_type_dict['properties'] = {}
                 for prop in event_type.properties:
                     event_type_dict['properties'][prop.name] = {
-                        'description': prop.definition
+                        'definition': prop.definition
                     }
                     if prop.choices:
                         event_type_dict['properties'][prop.name]['choices'] = prop.choices

@@ -16,22 +16,12 @@ class AssistantNamer(OpenAIQuery):
         self.conversations = conversations
 
     def generate_prompt(self) -> str:
-        # Format conversation samples as JSON
-        conversation_samples = []
-        for conversation in self.conversations[:self.max_conversations]: 
-            messages = conversation.messages[:self.max_messages_per_conversation]  
-            if not messages:
-                continue
-            
-            conversation_samples.append({
-                "conversation_id": conversation.id,
-                "messages": [msg.prompt_format for msg in messages]
-            })
+        conversations_json = [{"conversation_id": conversation.id, "messages": [msg.prompt_format for msg in conversation.messages]} for conversation in self.conversations[:self.max_conversations]]
 
         return f"""Generate a name and description for the AI assistant based on the provided conversations between an assistant and its users.
 
 ### Conversations
-{json.dumps(conversation_samples, indent=2)}
+{json.dumps(conversations_json, indent=2)}
 
 ### Instructions
 - The assistant may already identify itself within the conversations. If so, you can use this information to generate the name and description.

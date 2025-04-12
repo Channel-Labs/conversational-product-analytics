@@ -4,7 +4,7 @@ import json
 
 from models.conversation import Message, ROLE
 
-@dataclass(frozen=True)
+@dataclass
 class EventProperty:
     name: str
     definition: str

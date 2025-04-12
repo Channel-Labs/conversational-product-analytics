@@ -12,6 +12,7 @@ logging.basicConfig(
 
 from llm_queries.assistant_namer import AssistantNamer
 from llm_queries.event_type_schema_generator import EventTypeSchemaGenerator
+from llm_queries.event_property_schema_generator import EventPropertySchemaGenerator
 from models.data_schema import DataSchema
 from sources.local import LocalSource
 from sources.s3 import S3Source
@@ -58,9 +59,22 @@ if __name__ == "__main__":
         logger.info(f"Executing batch {i // batch_size + 1} of {num_batches}")
 
         convos = conversations[i:i+batch_size]
+
+        # First identify common event types across conversations in this batch
+        logger.info("Generating event types")
         event_type_schema_generator = EventTypeSchemaGenerator(openai_client, args.event_schema_model, assistant, convos, list(event_types))
         new_event_types = event_type_schema_generator.query()
-        event_types.update(new_event_types)
+
+        # Now generate event properties for each event type identified in this batch
+        for event_type in new_event_types:
+            logger.info(f"Generating event properties for event type: {event_type.name}")
+            event_property_schema_generator = EventPropertySchemaGenerator(openai_client, args.event_schema_model, assistant, event_type, convos)
+            event_type = event_property_schema_generator.query()
+            
+            # Remove the event type from the set and add the updated event type back to the set, so that it's saved with the updated properties
+            event_types.discard(event_type)
+            event_types.add(event_type)
+
 
     logger.info(f"Generated event types: {[e.name for e in event_types]}")
 

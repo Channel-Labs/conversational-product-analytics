@@ -1,25 +1,24 @@
-from dataclasses import asdict
 import json
 from typing import List
 
-from llm_queries.llm_query import OpenAIQuery
+from llm_queries.llm_query import LLMQuery, ModelProvider
 from models.assistant import Assistant
 from models.conversation import Conversation, Message
 from models.event import EventType, Event
 
 
-class ExplanationGenerator(OpenAIQuery):
+class ExplanationGenerator(LLMQuery):
 
     def __init__(
             self, 
-            client,
-            chat_model, 
+            model_provider: ModelProvider,
+            model_id: str, 
             assistant: Assistant, 
             event_types: List[EventType],
             events: List[Event],
             conversation: Conversation
         ):
-        super().__init__(client, chat_model)
+        super().__init__(model_provider, model_id)
         self.assistant = assistant
         self.event_types = event_types
         self.events = events
@@ -46,7 +45,7 @@ class ExplanationGenerator(OpenAIQuery):
 {json.dumps([{"message_id": e.message.message_id, "event_type": e.event_type.name} for e in self.events], indent=4)}
 """
     
-    def response_format(self):
+    def response_schema(self):
         properties = {}
         for event in self.events:
             properties[str(event.message.message_id)] = {
@@ -54,20 +53,11 @@ class ExplanationGenerator(OpenAIQuery):
                 "description": f"A 1-2 sentence explanation of why the current message was assigned the following event type: {event.event_type.prompt_format}"
             }
     
-        schema = {
+        return {
             "type": "object",
             "properties": properties,
             "required": [str(e.message.message_id) for e in self.events],
             "additionalProperties": False
-        }
-
-        return {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "response",
-                "strict": True,
-                "schema": schema
-            }
         }
 
     def parse_response(self, json_response) -> List[Event]:

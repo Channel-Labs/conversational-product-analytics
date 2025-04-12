@@ -1,19 +1,27 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 import json
 import time
-import openai
 import logging
+from typing import Dict
+import boto3
+from botocore.config import Config
 
-# Set up logger
+import anthropic
+import openai
+
+
 logger = logging.getLogger(__name__)
+
 
 class LLMQuery(ABC):
     """Base abstract class for LLM queries that defines the common interface."""
     
     @abstractmethod
-    def __init__(self, model_id, temp=0):
+    def __init__(self, model_provider: ModelProvider, model_id: str):
+        self.model_provider = model_provider
         self.model_id = model_id
-        self.temp = temp
     
     @abstractmethod
     def generate_prompt(self) -> str:
@@ -21,8 +29,8 @@ class LLMQuery(ABC):
         pass
     
     @abstractmethod
-    def response_format(self):
-        """Define the expected response format."""
+    def response_schema(self):
+        """Define the expected response schema."""
         pass
     
     @abstractmethod
@@ -30,80 +38,16 @@ class LLMQuery(ABC):
         """Parse the JSON response from the LLM."""
         pass
     
-    @abstractmethod
     def query(self, max_retries=3, retry_delay=2, timeout=60):
         """Send the query to the LLM and return the parsed response."""
-        pass
-
-
-class OpenAIQuery(LLMQuery):
-
-    def __init__(self, client, model_id, temp=0, reasoning_effort="low"):
-        super().__init__(model_id, temp)
-        self.client = client
-        self.reasoning_effort = reasoning_effort
-
-
-    def query(self, max_retries=3, retry_delay=2, timeout=60):
         user_msg = self.generate_prompt()
+        response_schema = self.response_schema()
 
         retries = 0
         while retries < max_retries:
             try:
-                # The reasoning models don't support temperature, but they have a reasoning_effort instead
-                if self.model_id.startswith("o"):
-                    response = self.client.chat.completions.create(
-                        model=self.model_id,
-                        messages=[
-                            {"role": "user", "content": user_msg}
-                        ],
-                        reasoning_effort=self.reasoning_effort,
-                        seed=42,
-                        response_format=self.response_format(),
-                        timeout=timeout
-                    ).choices[0].message.content
-                else:
-                    response = self.client.chat.completions.create(
-                        model=self.model_id,
-                        messages=[
-                            {"role": "user", "content": user_msg}
-                        ],
-                        temperature=self.temp,
-                        seed=42,
-                        response_format=self.response_format(),
-                        timeout=timeout
-                    ).choices[0].message.content
-
-                json_response = json.loads(response)
-                return self.parse_response(json_response)
-            except openai.RateLimitError as e:
-                retries += 1
-                logger.warning(e)
-                logger.info(f"Rate limit hit. Retrying in {retry_delay} seconds... (Attempt {retries}/{max_retries})")
-                time.sleep(retry_delay)
-                retry_delay += 2
-            except Exception as e:
-                logger.error(f"Unexpected error: {e}")
-                break
-
-        raise Exception("Unable to complete llm query.")
-
-
-class BedrockQuery(LLMQuery):
-
-    def __init__(self, bedrock_client, model_id, temp=0):
-        super().__init__(model_id, temp)
-        self.bedrock_client = bedrock_client
-
-    def query(self, max_retries=2, retry_delay=2, timeout=60):
-        user_msg = self.generate_prompt()
-
-        retries = 0
-        while retries < max_retries:
-            try:
-                response = self._query_claude(user_msg, timeout)
-                json_response = json.loads(response)
-                return self.parse_response(json_response)
+                response = self.model_provider.query(user_msg, response_schema, self.model_id, timeout)
+                return self.parse_response(response)
             except Exception as e:
                 retries += 1
                 logger.error(f"Error: {e}")
@@ -112,26 +56,119 @@ class BedrockQuery(LLMQuery):
                 retry_delay += 2
 
         raise Exception("Unable to complete llm query.")
+
     
-    def _query_claude(self, user_msg, timeout):
-        """Handle Claude API calls via Amazon Bedrock using tool use for schema enforcement"""
-        response_format = self.response_format()
+class ModelProvider(ABC):
+
+    @abstractmethod
+    def query(self, user_msg: str, response_schema: Dict, model_id: str, timeout: int=60):
+        pass
+
+    @abstractmethod
+    def response_format(self, response_schema: Dict) -> Dict:
+        pass
+
+class OpenAIModelProvider(ModelProvider):
+
+    def __init__(self, client: openai.OpenAI):
+        self.client = client
+
+    def query(self, user_msg: str, response_schema: Dict, model_id: str, timeout: int=60):
+        # The reasoning models don't support temperature
+        if model_id.startswith("o"):
+            response = self.client.chat.completions.create(
+                model=model_id,
+                messages=[
+                    {"role": "user", "content": user_msg}
+                ],
+                seed=42,
+                response_format=self.response_format(response_schema),
+                timeout=timeout
+            ).choices[0].message.content
+        else:
+            response = self.client.chat.completions.create(
+                model=model_id,
+                messages=[
+                    {"role": "user", "content": user_msg}
+                ],
+                temperature=0,
+                seed=42,
+                response_format=self.response_format(response_schema),
+                timeout=timeout
+            ).choices[0].message.content
+
+        return json.loads(response)
+    
+    def response_format(self, response_schema: Dict):
+        return {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "response",
+                "strict": True,
+                "schema": response_schema
+            }
+        }
+
+class AnthropicModelProvider(ModelProvider):
+    
+    def __init__(self, client: anthropic.Anthropic):
+        self.client = client
+    
+    def query(self, user_msg: str, response_schema: Dict, model_id: str, timeout: int=60):
+        """Handle API calls to Anthropic Claude using the tools API for schema enforcement"""
+        response_format = self.response_format(response_schema)
         
-        # Prepare the request body for Claude
+        response = self.client.messages.create(
+            model=model_id,
+            max_tokens=4096,
+            temperature=0,
+            messages=[
+                {"role": "user", "content": user_msg}
+            ],
+            tools=[response_format],
+            tool_choice={"type": "tool", "name": response_format["name"]},
+            timeout=timeout
+        )
+        
+        # Parse the response to get the tool use
+        for content in response.content:
+            if content.type == "tool_use":
+                return content.input
+        
+        # Fallback in case the model didn't use the tool
+        raise Exception("Anthropic model did not return a tool use response")
+    
+    def response_format(self, response_schema: Dict) -> Dict:
+        return {
+            "name": "json_extractor",
+            "description": "Extract structured data according to the provided schema",
+            "input_schema": response_schema
+        }
+    
+class BedrockModelProvider(ModelProvider):
+
+    def __init__(self, client: boto3.client):
+        self.client = client
+
+    def query(self, user_msg: str, response_schema: Dict, model_id: str, timeout: int=60):
+        """Handle API calls via Amazon Bedrock using tool use for schema enforcement"""
+        response_format = self.response_format(response_schema)
+        
+        # Prepare the request body
         request_body = {
             "anthropic_version": "bedrock-2023-05-31",
             "max_tokens": 4096,
-            "temperature": self.temp,
+            "temperature": 0,
             "messages": [
                 {"role": "user", "content": user_msg}
             ],
             "tools": [response_format],
             "tool_choice": {"type": "tool", "name": response_format["name"]}
         }
-         
+
         # Call the Bedrock API
-        response = self.bedrock_client.invoke_model(
-            modelId=self.model_id,
+        response = self.client.invoke_model(
+            modelId=model_id,
             body=json.dumps(request_body),
             contentType="application/json",
             accept="application/json"
@@ -141,5 +178,12 @@ class BedrockQuery(LLMQuery):
         response_body = json.loads(response['body'].read().decode('utf-8'))
         logger.debug(f"Response body: {response_body}")
         
-        input = response_body["content"][0]["input"]
-        return json.dumps(input)
+        return response_body["content"][0]["input"]
+    
+    def response_format(self, response_schema: Dict) -> Dict:
+        return {
+            "name": "json_extractor",
+            "description": "Extract structured data according to the provided schema",
+            "input_schema": response_schema
+        }
+

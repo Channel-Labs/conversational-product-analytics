@@ -3,16 +3,16 @@ import json
 
 from models.assistant import Assistant
 from models.conversation import Conversation
-from llm_queries.llm_query import OpenAIQuery
+from llm_queries.llm_query import LLMQuery, ModelProvider
 
 
-class AssistantNamer(OpenAIQuery):
+class AssistantNamer(LLMQuery):
 
     max_messages_per_conversation = 6
     max_conversations = 30
 
-    def __init__(self, openai_client, model: str, conversations: List[Conversation]):
-        super().__init__(openai_client, model)
+    def __init__(self, model_provider: ModelProvider, model_id: str, conversations: List[Conversation]):
+        super().__init__(model_provider, model_id)
         self.conversations = conversations
 
     def generate_prompt(self) -> str:
@@ -28,7 +28,7 @@ class AssistantNamer(OpenAIQuery):
 - If the assistant does not identify itself, you should infer the assistant's name and description based on the conversation data. The name should be short and professional ("Mental Health Companion", "Customer Support Agent", "Sales Coach", etc.), and the description should be brief (1-2 sentences) and capture the assistant's purpose and how it interacts with users.
 """
 
-    def response_format(self):
+    def response_schema(self):
         properties = dict()
         properties["assistant_name"] = {
             "type": "string",
@@ -40,20 +40,11 @@ class AssistantNamer(OpenAIQuery):
         }            
         required = ["assistant_name", "assistant_description"]
 
-        schema = {
+        return {
             "type": "object",
             "properties": properties,
             "required": required,
             "additionalProperties": False
-        }
-
-        return {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "response",
-                "strict": True,
-                "schema": schema
-            }
         }
 
     def parse_response(self, json_response):

@@ -1,22 +1,22 @@
 import json
 from typing import List, Dict
 
-from llm_queries.llm_query import OpenAIQuery
+from llm_queries.llm_query import LLMQuery, ModelProvider
 from models.assistant import Assistant
 from models.event import EventType, Event, EventProperty
 
-class EventPropertyGenerator(OpenAIQuery):
+class EventPropertyGenerator(LLMQuery):
 
     def __init__(
         self, 
-        client,
-        model, 
+        model_provider: ModelProvider,
+        model_id: str, 
         assistant: Assistant, 
         event_type: EventType,
         events: List[Event], 
         event_property: EventProperty
     ):
-        super().__init__(client, model)
+        super().__init__(model_provider, model_id)
         self.assistant = assistant
         self.event_type = event_type
         self.events = events   
@@ -46,7 +46,7 @@ class EventPropertyGenerator(OpenAIQuery):
 {json.dumps(explanations_json, indent=4)}
 """
     
-    def response_format(self):
+    def response_schema(self):
         properties = {}
         for event in self.events:
             properties[str(event.message.message_id)] = {
@@ -55,20 +55,11 @@ class EventPropertyGenerator(OpenAIQuery):
                 "description": f"The event property value that occurred during message_id {event.message.message_id}. If the message should not be tagged with any of the event property values, returnn an empty string."
             }
 
-        schema = {
+        return {
             "type": "object",
             "properties": properties,
             "required": [str(e.message.message_id) for e in self.events],
             "additionalProperties": False
-        }
-
-        return {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "response",
-                "strict": True,
-                "schema": schema
-            }
         }
        
     def parse_response(self, json_response) -> List[Event]:

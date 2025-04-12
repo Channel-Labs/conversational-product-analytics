@@ -1,24 +1,23 @@
-from dataclasses import asdict
 import json
 from typing import List
 
 from models.assistant import Assistant
 from models.conversation import Conversation
 from models.event import Event, EventType, ROLE
-from llm_queries.llm_query import BedrockQuery, OpenAIQuery
+from llm_queries.llm_query import LLMQuery, ModelProvider
 
 
-class EventGenerator(OpenAIQuery):
+class EventGenerator(LLMQuery):
 
     def __init__(
             self, 
-            client,
-            chat_model, 
+            model_provider: ModelProvider,
+            model_id: str, 
             assistant: Assistant, 
             event_types: List[EventType],
             conversation: Conversation
         ):
-        super().__init__(client, chat_model)
+        super().__init__(model_provider, model_id)
         self.assistant = assistant
         self.event_types = event_types
         self.conversation = conversation
@@ -44,7 +43,7 @@ class EventGenerator(OpenAIQuery):
 {json.dumps(self.conversation.prompt_format, indent=4)}
 """
     
-    def _response_schema(self):
+    def response_schema(self):
         properties = {}
 
         for message in self.conversation.messages:
@@ -64,28 +63,6 @@ class EventGenerator(OpenAIQuery):
             "properties": properties,
             "required": [str(m.message_id) for m in self.conversation.messages],
             "additionalProperties": False
-        }
-    
-    def response_format(self):
-        schema = self._response_schema()
-
-        return {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "response",
-                "strict": True,
-                "schema": schema
-            }
-        }
-    
-    # TODO: be able to swap back and forth between response formats
-    def response_format_claude(self):
-        schema = self._response_schema()
-
-        return {
-            "name": "generate_events",
-            "description": "Generates the list of events that occurred during a conversation between a user and an assistant.",
-            "input_schema": schema
         }
 
     def parse_response(self, json_response) -> List[Event]:   

@@ -1,12 +1,12 @@
 import json
 from typing import List
 
-from llm_queries.llm_query import OpenAIQuery
+from llm_queries.llm_query import LLMQuery, ModelProvider
 from models.assistant import Assistant
 from models.conversation import Conversation
 from models.event import EventType, EventProperty
 
-class EventPropertySchemaGenerator(OpenAIQuery):
+class EventPropertySchemaGenerator(LLMQuery):
 
     examples = [
         {
@@ -33,14 +33,13 @@ class EventPropertySchemaGenerator(OpenAIQuery):
 
     def __init__(
         self,
-        client, 
-        model, 
+        model_provider: ModelProvider, 
+        model_id: str, 
         assistant: Assistant, 
         event_type: EventType, 
-        conversations: List[Conversation], 
-        reasoning_effort: str="low"
+        conversations: List[Conversation] 
     ):
-        super().__init__(client, model, reasoning_effort=reasoning_effort)
+        super().__init__(model_provider, model_id)
         self.assistant = assistant
         self.event_type = event_type
         self.conversations = conversations
@@ -75,7 +74,7 @@ class EventPropertySchemaGenerator(OpenAIQuery):
 {json.dumps(conversations_json, indent=4)}
 """
     
-    def response_format(self):
+    def response_schema(self):
         properties = {}
         properties["event_properties"] = {
             "type": "array",
@@ -103,20 +102,11 @@ class EventPropertySchemaGenerator(OpenAIQuery):
             },
         }
 
-        schema = {
+        return {
             "type": "object",
             "properties": properties,
             "required": ["event_properties"],
             "additionalProperties": False
-        }
-
-        return {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "response",
-                "strict": True,
-                "schema": schema
-            }
         }
        
     def parse_response(self, json_response) -> EventType:

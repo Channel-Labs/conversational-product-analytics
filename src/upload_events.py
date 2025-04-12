@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 from tqdm import tqdm
 
+from anthropic import Anthropic
 from amplitude import Amplitude
 import boto3
 from openai import OpenAI
@@ -20,6 +21,7 @@ from destinations.posthog import PosthogDestination
 from llm_queries.event_generator import EventGenerator
 from llm_queries.event_property_generator import EventPropertyGenerator
 from llm_queries.explanation_generator import ExplanationGenerator
+from llm_queries.llm_query import OpenAIModelProvider, BedrockModelProvider, AnthropicModelProvider
 from models.data_schema import DataSchema
 from sources.local import LocalSource
 from sources.s3 import S3Source
@@ -30,18 +32,27 @@ logger.setLevel(logging.INFO)
 
 logging.getLogger('openai').setLevel(logging.WARNING)
 logging.getLogger('amplitude').setLevel(logging.WARNING)
-
+logging.getLogger('anthropic').setLevel(logging.WARNING)
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-path", type=str, required=True)
     parser.add_argument("--data-schema-path", type=str, required=True)
     parser.add_argument("--destination", type=str, choices=["amplitude", "posthog"], required=True)
+    parser.add_argument("--model-provider", type=str, choices=["openai", "anthropic", "bedrock"], default="openai")
     parser.add_argument("--event-model", type=str, default="gpt-4o")
     parser.add_argument("--event-property-model", type=str, default="gpt-4o")
     parser.add_argument("--explanation-model", type=str, default="gpt-4o-mini")
     args = parser.parse_args()
 
-    openai_client = OpenAI()
+    if args.model_provider == "openai":
+        openai_client = OpenAI()
+        model_provider = OpenAIModelProvider(openai_client)
+    elif args.model_provider == "anthropic":
+        anthropic_client = Anthropic()
+        model_provider = AnthropicModelProvider(anthropic_client)
+    elif args.model_provider == "bedrock":
+        bedrock_client = boto3.client("bedrock-runtime")
+        model_provider = BedrockModelProvider(bedrock_client)
 
     data_schema = DataSchema.from_yaml(args.data_schema_path)
 
@@ -75,7 +86,7 @@ if __name__ == "__main__":
         futures = {
             executor.submit(
                 EventGenerator(
-                    openai_client,
+                    model_provider,
                     args.event_model, 
                     data_schema.assistant, 
                     data_schema.event_types,
@@ -102,7 +113,7 @@ if __name__ == "__main__":
         for conversation, events_for_conversation in events_by_conversation.items():
             future = executor.submit(
                 ExplanationGenerator(
-                    openai_client,
+                    model_provider,
                     args.explanation_model, 
                     data_schema.assistant, 
                     data_schema.event_types,
@@ -144,7 +155,7 @@ if __name__ == "__main__":
                     events_batch = events_for_event_type[i:i + batch_size]
                     future = executor.submit(
                         EventPropertyGenerator(
-                            openai_client,
+                            model_provider,
                             args.event_property_model, 
                             data_schema.assistant, 
                             event_type, 

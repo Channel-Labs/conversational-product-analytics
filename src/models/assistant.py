@@ -8,5 +8,9 @@ class Assistant:
     description: str
 
     @property
+    def prompt_object(self) -> dict:
+        return {"name": self.name, "description": self.description}
+
+    @property
     def prompt_format(self) -> str:
-        return json.dumps({"name": self.name, "description": self.description}, indent=4)
+        return json.dumps(self.prompt_object, indent=4)

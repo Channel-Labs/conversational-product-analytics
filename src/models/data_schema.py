@@ -5,11 +5,12 @@ from typing import List
 import yaml
 from models.assistant import Assistant
 from models.event import EventType, ROLE, EventProperty
-
+from models.llm_judge_criteria import LLMJudgeCriteria
 
 @dataclass
 class DataSchema:
     assistant: Assistant
+    llm_judge_criteria: LLMJudgeCriteria
     event_types: List[EventType]
     
     @classmethod
@@ -31,6 +32,15 @@ class DataSchema:
         assistant = Assistant(
             name=assistant_data['name'],
             description=assistant_data['description']
+        )
+        
+        # Parse LLM judge criteria
+        judge_criteria_data = schema_data['llm_judge_criteria']
+        llm_judge_criteria = LLMJudgeCriteria(
+            primary_goals=judge_criteria_data.get('primary_goals', []),
+            secondary_goals=judge_criteria_data.get('secondary_goals', []),
+            tertiary_goals=judge_criteria_data.get('tertiary_goals', []),
+            dealbreakers=judge_criteria_data.get('dealbreakers', [])
         )
         
         # Parse event types
@@ -58,6 +68,7 @@ class DataSchema:
         
         return cls(
             assistant=assistant,
+            llm_judge_criteria=llm_judge_criteria,
             event_types=event_types
         )
 
@@ -73,6 +84,12 @@ class DataSchema:
             'assistant': {
                 'name': self.assistant.name,
                 'description': self.assistant.description
+            },
+            'llm_judge_criteria': {
+                'primary_goals': self.llm_judge_criteria.primary_goals,
+                'secondary_goals': self.llm_judge_criteria.secondary_goals,
+                'tertiary_goals': self.llm_judge_criteria.tertiary_goals,
+                'dealbreakers': self.llm_judge_criteria.dealbreakers
             },
             'event_types': []
         }

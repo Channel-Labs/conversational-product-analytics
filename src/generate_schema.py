@@ -14,6 +14,7 @@ logging.basicConfig(
 from llm_queries.assistant_namer import AssistantNamer
 from llm_queries.event_type_schema_generator import EventTypeSchemaGenerator
 from llm_queries.event_property_schema_generator import EventPropertySchemaGenerator
+from llm_queries.llm_judge_criteria_generator import LLMJudgeCriteriaGenerator
 from llm_queries.llm_query import OpenAIModelProvider, BedrockModelProvider, AnthropicModelProvider
 from models.data_schema import DataSchema
 from sources.local import LocalSource
@@ -32,6 +33,7 @@ if __name__ == "__main__":
     parser.add_argument("--data-schema-output-path", type=str, required=True, help="The location to save the generated data schema")
     parser.add_argument("--model-provider", type=str, choices=["openai", "bedrock", "anthropic"], default="openai")
     parser.add_argument("--assistant-namer-model", type=str, default="gpt-4o")
+    parser.add_argument("--llm-judge-criteria-model", type=str, default="o3-mini")
     parser.add_argument("--event-schema-model", type=str, default="o3-mini")
     args = parser.parse_args() 
 
@@ -60,6 +62,10 @@ if __name__ == "__main__":
     logger.info("Generating assistant definition")
     assistant_namer = AssistantNamer(model_provider, args.assistant_namer_model, conversations)
     assistant = assistant_namer.query()
+
+    logger.info("Generating LLM judge criteria")
+    llm_judge_criteria_generator = LLMJudgeCriteriaGenerator(model_provider, args.llm_judge_criteria_model, assistant)
+    llm_judge_criteria = llm_judge_criteria_generator.query()
 
     logger.info("Generating event schema")
     batch_size = 30
@@ -91,5 +97,5 @@ if __name__ == "__main__":
 
     logger.info("Saving data schema")
     sorted_event_types = sorted(event_types, key=lambda e: (e.role.name, e.name))
-    data_schema = DataSchema(assistant, sorted_event_types)
+    data_schema = DataSchema(assistant, llm_judge_criteria, sorted_event_types)
     data_schema.to_yaml(args.data_schema_output_path)

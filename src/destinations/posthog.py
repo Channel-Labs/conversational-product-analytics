@@ -9,14 +9,15 @@ class PosthogDestination(Destination):
     def __init__(self, posthog_client: Posthog):
         self.posthog_client = posthog_client
 
-    def send_event(self, event: Event):
+    def send_event(self, event: Event, llm_judge_score: int):
 
         event_properties = {
             "conversation_id": event.conversation_id,
             "message_id": event.message.message_id,
             "content": event.message.content,
             "role": event.message.role.name.lower(),
-            "explanation": event.explanation
+            "explanation": event.explanation,
+            "llm_judge_score": llm_judge_score
         }
 
         for property_name, property_value in event.property_values.items():

@@ -21,6 +21,7 @@ from destinations.posthog import PosthogDestination
 from llm_queries.event_generator import EventGenerator
 from llm_queries.event_property_generator import EventPropertyGenerator
 from llm_queries.explanation_generator import ExplanationGenerator
+from llm_queries.llm_judge import LLMJudge
 from llm_queries.llm_query import OpenAIModelProvider, BedrockModelProvider, AnthropicModelProvider
 from models.data_schema import DataSchema
 from sources.local import LocalSource
@@ -42,6 +43,7 @@ if __name__ == "__main__":
     parser.add_argument("--event-model", type=str, default="gpt-4o")
     parser.add_argument("--event-property-model", type=str, default="gpt-4o")
     parser.add_argument("--explanation-model", type=str, default="gpt-4o-mini")
+    parser.add_argument("--llm-judge-model", type=str, default="gpt-4o")
     args = parser.parse_args()
 
     if args.model_provider == "openai":
@@ -79,6 +81,33 @@ if __name__ == "__main__":
     logger.info("Loading conversations")
     conversations = source.get_conversations()
     logger.info(f"Found {len(conversations)} conversations")
+
+    # TODO: EXECUTE THIS IN PARALLEL
+    logger.info("Performing LLM-as-a-judge on conversations")
+    llm_judge_scores_by_convo_id = dict()
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        futures = {
+            executor.submit(
+                LLMJudge(
+                    model_provider,
+                    args.llm_judge_model,
+                    data_schema.assistant,
+                    data_schema.llm_judge_criteria,
+                    conversation
+                ).query,
+                max_retries=2,
+                retry_delay=2,
+                timeout=60
+            ): conversation for conversation in conversations
+        }
+        
+        for future in tqdm(as_completed(futures), total=len(conversations), desc="Processing LLM Judge"):
+            try:
+                conversation = futures[future]
+                llm_judge_score = future.result()
+                llm_judge_scores_by_convo_id[conversation.id] = llm_judge_score
+            except Exception as e:
+                logger.error(f"Error running LLM Judge for conversation {conversation.id}: {e}")
 
     logger.info("Generating events")
     events_by_conversation = dict()
@@ -186,7 +215,7 @@ if __name__ == "__main__":
     logger.info(f"Uploading events")
     with ThreadPoolExecutor(max_workers=10) as executor:
         futures= [
-            executor.submit(destination.send_event, event) for event in events
+            executor.submit(destination.send_event, event, llm_judge_scores_by_convo_id[event.conversation_id]) for event in events
         ]
         
         for future in tqdm(as_completed(futures), total=len(events), desc="Uploading events"):

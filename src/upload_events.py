@@ -41,9 +41,9 @@ if __name__ == "__main__":
     parser.add_argument("--destination", type=str, choices=["amplitude", "posthog"], required=True)
     parser.add_argument("--model-provider", type=str, choices=["openai", "anthropic", "bedrock"], default="openai")
     parser.add_argument("--event-model", type=str, default="gpt-4o")
-    parser.add_argument("--event-property-model", type=str, default="gpt-4o")
-    parser.add_argument("--explanation-model", type=str, default="gpt-4o-mini")
-    parser.add_argument("--llm-judge-model", type=str, default="gpt-4o")
+    parser.add_argument("--event-property-model", type=str, default="gpt-4.1")
+    parser.add_argument("--explanation-model", type=str, default="gpt-4.1-mini")
+    parser.add_argument("--llm-judge-model", type=str, default="gpt-4.1")
     args = parser.parse_args()
 
     if args.model_provider == "openai":

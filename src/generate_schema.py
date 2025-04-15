@@ -32,7 +32,7 @@ if __name__ == "__main__":
     parser.add_argument("--data-path", type=str, required=True)
     parser.add_argument("--data-schema-output-path", type=str, required=True, help="The location to save the generated data schema")
     parser.add_argument("--model-provider", type=str, choices=["openai", "bedrock", "anthropic"], default="openai")
-    parser.add_argument("--assistant-namer-model", type=str, default="gpt-4o")
+    parser.add_argument("--assistant-namer-model", type=str, default="gpt-4.1")
     parser.add_argument("--llm-judge-criteria-model", type=str, default="o3-mini")
     parser.add_argument("--event-schema-model", type=str, default="o3-mini")
     args = parser.parse_args() 
@@ -68,8 +68,8 @@ if __name__ == "__main__":
     llm_judge_criteria = llm_judge_criteria_generator.query()
 
     logger.info("Generating event schema")
-    batch_size = 30
-    num_batches = 3
+    batch_size = 40
+    num_batches = 1
     event_types = set()
 
     for i in range(0, min(len(conversations), batch_size * num_batches), batch_size):
@@ -80,7 +80,8 @@ if __name__ == "__main__":
         # First identify common event types across conversations in this batch
         logger.info("Generating event types")
         event_type_schema_generator = EventTypeSchemaGenerator(model_provider, args.event_schema_model, assistant, convos, list(event_types))
-        new_event_types = event_type_schema_generator.query()
+        new_event_types = event_type_schema_generator.query(max_retries=2, timeout=120)
+        logger.info(f"Generated event types in batch {i // batch_size + 1}: {[e.name for e in new_event_types]}")
 
         # Now generate event properties for each event type identified in this batch
         for event_type in new_event_types:

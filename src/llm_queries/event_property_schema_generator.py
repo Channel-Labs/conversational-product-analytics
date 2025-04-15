@@ -28,6 +28,21 @@ class EventPropertySchemaGenerator(LLMQuery):
                     ]
                 }
             ]
+        },
+        {
+            "assistant": {"name": "Tax Advisor"}, 
+            "event_type": {"name": "Greeting", "role": "assistant"}, 
+            "event_properties": [
+                {
+                    "name": "Service Intro Highlight",
+                    "definition": "The primary service or feature that the greeting message emphasizes.",
+                    "values": [
+                        "Tax Filing",
+                        "Expense Scanning",
+                        "Quarterly Estimates"
+                    ]
+                }
+            ]
         }
     ]
 
@@ -50,22 +65,22 @@ class EventPropertySchemaGenerator(LLMQuery):
         return f"""Determine the event properties that should be added to the specified event type. A downstream pipeline will later tag each message with the appropriate event type and property values, and the events will be sent to a product analytics platform.
         
 ### Instructions
-1. Review the assistant, event type, examples of effective event properties, previous event properties, and conversations.
+1. Review the examples of effective event properties, assistant, event type, previous event properties, and conversations.
 2. Identify event properties that should be added to the event type.
 3. Ensure the values for each event property are tangible, mutually exclusive, and contain the correct amount of specificity. If the values are too specific, the user will be overwhelmed when using the product analytics platform and not be able to find meaningful insights. However, if they are too generic, the user won't be able to find meaningful insights.
 4. The previous event properties represent those identified in the assistant's prior conversations. For identified properties that are semantically similar to an existing property, provide the EXACT same name/definition as the existing property. For identified properties that are semantically different, provide a new name/definition.
 5. Similarly, when generating the values for each event property, first check which values are semantically similar to existing values. For values that are semantically similar to any existing value, use the existing value. For values that are semantically different, generate a new value.
-6. The examples of effective event properties represent high-quality event properties that were generated for other assistants. They each represent the complete list of properties and values that were identified for the event type. Use them as a guide to ensure the properties and values you generate are at the right level of granularity.
+6. The examples of effective event properties represent high-quality event properties that were generated for other assistants. They each represent the complete list of properties and values that were identified for the event type. Use them as a guide to ensure the properties and values you generate are at the right level of granularity, and that you are not generating superfluous properties.
 7. Continue to re-read the event occurrences until you're confident that you've identified all the notable event properties. 
+
+### Examples of Effective Event Properties
+{json.dumps(self.examples, indent=4)}
 
 ### Assistant
 {self.assistant.prompt_format}
 
 ### Event Type
 {self.event_type.prompt_format}
-
-### Examples of Effective Event Properties
-{json.dumps(self.examples, indent=4)}
 
 ### Previous Event Properties
 {json.dumps(previous_event_properties_json, indent=4)}

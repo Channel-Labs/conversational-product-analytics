@@ -1,0 +1,289 @@
+assistant:
+  name: Tax Assistant
+  description: A tax advisor that helps users track expenses, identify tax deductions, answer tax-related questions, and navigate the tax filing process.
+llm_judge_criteria:
+  primary_goals:
+  - Provide accurate, up-to-date, and personalized tax-related guidance based on the
+    user's specific situation and queries
+  - Correctly explain tax concepts, deductions, and expense tracking in clear, straightforward
+    terms
+  - Guide users effectively through tax filing processes and steps, ensuring clarity
+    and relevance in each interaction
+  secondary_goals:
+  - Maintain a professional and courteous tone while balancing technical tax details
+    with user-friendly language
+  - Offer appropriate disclaimers where necessary, emphasizing that the information
+    provided is for guidance only and encouraging consultation with a human expert
+    when needed
+  - Adapt responses based on the evolving context of the conversation, ensuring that
+    instructions and advice remain contextually relevant to the user's questions
+  tertiary_goals:
+  - Ensure consistency in the use of terminology, style, and overall messaging throughout
+    the conversation
+  - Demonstrate proactive clarification by asking follow-up questions if the user's
+    needs or circumstances are ambiguous
+  - Provide response structure that is logically organized and easy to follow, avoiding
+    unnecessary complexity or vagueness
+  dealbreakers:
+  - Providing incorrect or misleading tax advice that could lead to financial or legal
+    issues for the user
+  - Using overly casual or imprecise language that undermines the professional nature
+    of the assistance
+  - "Failing to include necessary disclaimers, especially in situations that require\
+    \ a certified professional\u2019s input"
+  - Repeating generic responses or failing to adjust guidance when the user's situation
+    clearly demands more specific or nuanced advice
+event_types:
+- name: Assistant Greeting
+  definition: An assistant-initiated message to welcome the user and introduce its services.
+  role: assistant
+- name: Expense Guidance
+  definition: An assistant message offering advice related to a potential expense, ensuring it is reported accurately on the tax return.
+  role: assistant
+  properties:
+    Recommended Expense Category:
+      definition: The expense category that the assistant recommends for
+        the expense to ensure it is accurately reported on the tax return.
+      choices:
+      - Medical Expense
+      - Business Meal
+      - Travel Expense
+      - Car-Related Expense
+      - Office Supplies
+      - Home Office
+      - Cost of Goods Sold
+      - Charitable Contribution
+      - Non-Deductible
+      - Other
+    Deductibility:
+      definition: Indicates whether the expense, as categorized by the assistant,
+        is fully, partially, or not deductible for tax purposes.
+      choices:
+      - Deductible
+      - Partially Deductible
+      - Non-Deductible
+      - Conditional (Requires Business Confirmation)
+- name: General Tax Guidance
+  definition: An event where the assistant provides instructional guidance or clarifications about tax topics, processes, or next steps (e.g., explaining depreciation, how to update filing status).
+  role: assistant
+  properties:
+    Tax Guidance Topic:
+      definition: The specific tax subject matter or issue addressed by the assistant
+        in the guidance message.
+      choices:
+      - Tax Forms & Documents
+      - Tax Filing Process
+      - Tax Credits & Deductions
+      - Quarterly Estimated Taxes
+      - Business Expenses
+    Guidance Next Step:
+      definition: The recommended action or next step the assistant advises the user
+        to take regarding their tax situation.
+      choices:
+      - Contact Support
+      - Review Deductions
+      - Adjust Estimated Payments
+      - Upload Tax Forms
+      - Reconnect Account
+- name: Tax Form Upload Guidance
+  definition: "An assistant message providing step\u2010by\u2010step instructions\
+    \ or tips for uploading tax documents or manually entering tax form data into\
+    \ the platform."
+  role: assistant
+  properties:
+    Upload Method Recommendation:
+      definition: The method suggested for uploading tax documents to the platform,
+        indicating whether to drag & drop, select a file, capture a photo, or manually
+        enter data.
+      choices:
+      - Drag & Drop
+      - File Selection
+      - Photo Capture
+      - Manual Entry
+    File Format Recommendation:
+      definition: The recommended file format(s) for uploading the tax documents.
+      choices:
+      - PDF
+      - Image (JPG/PNG)
+      - Spreadsheet (CSV/XLSX)
+    Document Type:
+      definition: The specific tax form being referenced in the guidance message.
+      choices:
+      - W-2
+      - 1099-NEC
+      - 1099-K
+      - '1040'
+      - Other
+    Guidance Context:
+      definition: The context of the guidance provided, reflecting whether the message
+        is giving step-by-step instructions, troubleshooting advice, or general tips.
+      choices:
+      - Step-by-Step Instructions
+      - Troubleshooting Tips
+      - General Guidance
+- name: Amendment Request Inquiry
+  definition: A user message asking how to file an amended tax return or seeking clarification
+    on what changes are permitted post-submission.
+  role: user
+  properties:
+    Amendment Topic:
+      definition: The subject of the user's inquiry about an amendment, specifying
+        what aspect of the tax return they wish to correct or clarify (for example,
+        correcting personal details, adding missing income or deductions, or adjusting
+        expense categories).
+      choices:
+      - Personal Information Correction
+      - Income/Deduction Adjustment
+      - Missing Documentation
+      - General Amendment Inquiry
+    Amendment Timing:
+      definition: The phase in the tax filing process during which the user is asking
+        about filing an amendment.
+      choices:
+      - Post-Submission
+- name: Expense Categorization Inquiry
+  definition: A user asks how to properly categorize an expense within their tax return
+    (for example, supplies versus cost of goods sold) to ensure accurate reporting.
+  role: user
+  properties:
+    Expense Category:
+      definition: The specific expense category that the user is asking how to classify
+        on their tax return.
+      choices:
+      - Medical Expense 
+      - Business Meal
+      - Travel Expense
+      - Car-Related Expense
+      - Office Supplies
+      - Home Office
+      - Cost of Goods Sold
+      - Charitable Contribution
+      - Other
+    Deductibility Inquiry:
+      definition: "Indicates whether the user\u2019s inquiry involves a question about\
+        \ whether the expense is deductible."
+      choices:
+      - 'Yes'
+      - 'No'
+      - Conditional
+- name: Quarterly Tax Payment Inquiry
+  definition: An event where the user asks for information or guidance on making estimated
+    quarterly tax payments, including how much to pay or process for them.
+  role: user
+  properties:
+    Inquiry Focus:
+      definition: The specific aspect of quarterly tax payments the user is asking
+        about.
+      choices:
+      - Payment Amount
+      - Payment Method
+      - Payment Timing
+      - Payment Adjustment
+      - State Payment Inquiry
+    Estimated Payment Type:
+      definition: Indicates whether the inquiry relates to federal, state, or both
+        types of estimated quarterly tax payments.
+      choices:
+      - Federal
+      - State
+      - Both
+    Timeframe:
+      definition: Specifies the period referenced in the inquiry, such as for the
+        current tax year, the upcoming tax year, or unspecific.
+      choices:
+      - Current Tax Year
+      - Next Tax Year
+      - Unspecified
+- name: Refund and Billing Inquiry
+  definition: An event where the user asks about subscription charges, cancellation,
+    refunds or other billing-related issues.
+  role: user
+  properties:
+    Inquiry Category:
+      definition: The primary subject or concern raised by the user regarding subscription
+        charges, refunds, or other billing issues.
+      choices:
+      - Refund Request
+      - Billing Charge Inquiry
+      - Subscription Cancellation Inquiry
+      - Reconnection Issue
+      - Other
+- name: Subscription Management Inquiry
+  definition: A user inquiry about subscription plans, pricing changes, payment options,
+    or upgrading/downgrading their plan.
+  role: user
+  properties:
+    Subscription Action:
+      definition: The specific action the user is inquiring about regarding their
+        subscription plan.
+      choices:
+      - Upgrade
+      - Downgrade
+      - Cancellation
+      - Renewal Inquiry
+      - Payment Method Change
+      - Refund Request
+      - Plan Information Inquiry
+    Subscription Plan Type:
+      definition: The subscription tier or plan that the inquiry pertains to.
+      choices:
+      - Monthly
+      - Annual
+      - Premium
+      - Other
+- name: Tax Form Guidance Inquiry
+  definition: A user seeks information about various tax forms (such as 1099-NEC,
+    1099-K, 1099-MISC, W-2, Schedule C) and requests explanations on their purpose
+    and how to use or upload them.
+  role: user
+  properties:
+    Tax Form:
+      definition: Specifies which tax form the user is inquiring about.
+      choices:
+      - 1099-NEC
+      - 1099-K
+      - 1099-MISC
+      - W-2
+      - W-4
+      - 1099-DIV
+      - 1095-B
+      - Schedule C
+      - Form 1040
+      - Other
+    Guidance Topic:
+      definition: Indicates the specific aspect of the tax form the user seeks guidance
+        on, such as its purpose, usage instructions, upload process, or clarification
+        about filing.
+      choices:
+      - Purpose Explanation
+      - Usage Instruction
+      - Upload Guidance
+      - Filing Process Clarification
+      - Other
+- name: Tax Return Status Inquiry
+  definition: An event where the user inquires about the progress, submission status,
+    or review of their tax return, including refund status.
+  role: user
+  properties:
+    Tax Year:
+      definition: The tax year for which the user is asking about the status of their
+        tax return.
+      choices:
+      - '2021'
+      - '2022'
+      - '2023'
+      - '2024'
+    Return Stage:
+      definition: "The phase of the tax return process that the user\u2019s inquiry\
+        \ is focused on."
+      choices:
+      - Under Review
+      - Ready to File
+      - Filed/Sent to IRS
+      - Refund Issued
+    Inquiry Focus:
+      definition: Specifies whether the inquiry pertains generally to the progress
+        of the tax return or specifically to refund status.
+      choices:
+      - Return Progress
+      - Refund Status

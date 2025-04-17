@@ -33,8 +33,8 @@ if __name__ == "__main__":
     parser.add_argument("--data-schema-output-path", type=str, required=True, help="The location to save the generated data schema")
     parser.add_argument("--model-provider", type=str, choices=["openai", "bedrock", "anthropic"], default="openai")
     parser.add_argument("--assistant-namer-model", type=str, default="gpt-4.1")
-    parser.add_argument("--llm-judge-criteria-model", type=str, default="o3-mini")
-    parser.add_argument("--event-schema-model", type=str, default="o3-mini")
+    parser.add_argument("--llm-judge-criteria-model", type=str, default="o4-mini")
+    parser.add_argument("--event-schema-model", type=str, default="o4-mini")
     args = parser.parse_args() 
 
 
@@ -65,7 +65,7 @@ if __name__ == "__main__":
 
     logger.info("Generating LLM judge criteria")
     llm_judge_criteria_generator = LLMJudgeCriteriaGenerator(model_provider, args.llm_judge_criteria_model, assistant)
-    llm_judge_criteria = llm_judge_criteria_generator.query()
+    llm_judge_criteria = llm_judge_criteria_generator.query(max_retries=2, timeout=120)
 
     logger.info("Generating event schema")
     batch_size = 40
@@ -87,7 +87,7 @@ if __name__ == "__main__":
         for event_type in new_event_types:
             logger.info(f"Generating event properties for event type: {event_type.name}")
             event_property_schema_generator = EventPropertySchemaGenerator(model_provider, args.event_schema_model, assistant, event_type, convos)
-            event_type = event_property_schema_generator.query()
+            event_type = event_property_schema_generator.query(max_retries=2, timeout=120)
 
             # Remove the event type from the set and add the updated event type back to the set, so that it's saved with the updated properties
             event_types.discard(event_type)

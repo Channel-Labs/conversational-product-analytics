@@ -100,12 +100,6 @@ event_types:
       - File Selection
       - Photo Capture
       - Manual Entry
-    File Format Recommendation:
-      definition: The recommended file format(s) for uploading the tax documents.
-      choices:
-      - PDF
-      - Image (JPG/PNG)
-      - Spreadsheet (CSV/XLSX)
     Document Type:
       definition: The specific tax form being referenced in the guidance message.
       choices:
@@ -114,13 +108,6 @@ event_types:
       - 1099-K
       - '1040'
       - Other
-    Guidance Context:
-      definition: The context of the guidance provided, reflecting whether the message
-        is giving step-by-step instructions, troubleshooting advice, or general tips.
-      choices:
-      - Step-by-Step Instructions
-      - Troubleshooting Tips
-      - General Guidance
 - name: Amendment Request Inquiry
   definition: A user message asking how to file an amended tax return or seeking clarification
     on what changes are permitted post-submission.
@@ -136,11 +123,6 @@ event_types:
       - Income/Deduction Adjustment
       - Missing Documentation
       - General Amendment Inquiry
-    Amendment Timing:
-      definition: The phase in the tax filing process during which the user is asking
-        about filing an amendment.
-      choices:
-      - Post-Submission
 - name: Expense Categorization Inquiry
   definition: A user asks how to properly categorize an expense within their tax return
     (for example, supplies versus cost of goods sold) to ensure accurate reporting.
@@ -224,13 +206,6 @@ event_types:
       - Payment Method Change
       - Refund Request
       - Plan Information Inquiry
-    Subscription Plan Type:
-      definition: The subscription tier or plan that the inquiry pertains to.
-      choices:
-      - Monthly
-      - Annual
-      - Premium
-      - Other
 - name: Tax Form Guidance Inquiry
   definition: A user seeks information about various tax forms (such as 1099-NEC,
     1099-K, 1099-MISC, W-2, Schedule C) and requests explanations on their purpose

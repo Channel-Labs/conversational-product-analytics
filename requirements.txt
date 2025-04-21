@@ -1,4 +1,5 @@
 amplitude-analytics
+anthropic
 boto3
 openai
 posthog
